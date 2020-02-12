@@ -1,0 +1,15 @@
+Buffer
+    capicity:Buffer的容量 永远不会变化
+    limit : 永远不大于 capicity，最后一个元素的下一个位置
+    position :下一个被读或被写的元素的索引 ，永远不会超过limit
+
+
+    创建一个buffer开始 capicity,和limit（虚拟出的地址）position指向索引0
+    当加入一个元素position指向索引1
+
+    调用flip:position指向0 ，limit指向原position的位置 ，cap不变
+
+    0<=mark<=position<=limit<=capacity
+
+
+

@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>websocket客户端</title>
+</head>
+<script type="text/javascript">
+    var socket;
+    socket = new WebSocket("ws://localhost:8899/ws");
+
+    socket.onmessage = function (event) {
+        var ta = document.getElementById('responseText');
+        ta.value = ta.value + "\n" + event.data;
+    }
+
+    socket.onopen = function (event) {
+        var ta = document.getElementById('responseText');
+        ta.value = '连接开启';
+    }
+
+    socket.onclose = function (event) {
+        var ta = document.getElementById('responseText');
+        ta.value = ta.value + "\n" + '连接关闭';
+    }
+
+    function send(message) {
+        if(socket.readyState=WebSocket.OPEN) {
+            socket.send(message);
+        }
+    }
+
+</script>
+
+
+<body>
+
+<form onsubmit="return false;">
+
+    <textarea name="message" style="width: 400px; height: 200px;"></textarea>
+
+    <input type="button" value="发送" onclick="send(this.form.message.value)">
+</form>
+
+<h3>服务端输出：</h3>
+<textarea id="responseText" style="width: 400px; height: 200px;"></textarea>
+
+<input type="button" onclick="javascript:document.getElementById('responseText').value=''" value="清空内容">
+</body>
+</html>

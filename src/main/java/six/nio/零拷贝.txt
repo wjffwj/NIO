@@ -1,0 +1,3 @@
+DireactBuffer 父类Buffer中的address给DireactBuffer用 是堆外内存的地址，直接操作操作系统内存，
+避免了HeapByteBuffer需要拷贝一份到操作系统内存、 且拷贝过程中不允许发生GC
+

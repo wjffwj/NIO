@@ -1,0 +1,9 @@
+从inputsteam获取channel
+创建buffer
+将数据从channel读取到buffer中
+写到控制台或者文件
+
+绝对方法和相对方法：
+
+1.相对方法：limit值和position值会在操作中被考虑到
+2.绝对方法：完全忽略掉 limit值和position值
