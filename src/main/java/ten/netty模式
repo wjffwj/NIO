@@ -1,0 +1,14 @@
+Reactor模式
+netty整体架构是Reactor模式的完整体现
+
+1.reactor分发恰当的处理器对IO事件进行响应
+2.handler执行非阻塞动作
+3.通过将handler绑定到事件上进行管理
+
+
+Java.nio
+
+Channel:连接到文件支持非阻塞读
+BUffer :数组对象 可读写
+Selector:告诉我们1组Channel中哪些产生了IO事件
+SelectionKey:io事件的状态
