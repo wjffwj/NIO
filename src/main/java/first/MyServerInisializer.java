@@ -24,7 +24,7 @@ public class MyServerInisializer extends ChannelInitializer<SocketChannel> {
         ChannelPipeline pipeline = socketChannel.pipeline();
         //添加一些现成的处理器 -start
         pipeline.addLast(
-                new LengthFieldBasedFrameDecoder(Integer.MAX_VALUE,0,4,0,4)
+                new LengthFieldBasedFrameDecoder(Integer.MAX_VALUE, 0, 4, 0, 4)
         );
         pipeline.addLast(new LengthFieldPrepender(4));
         pipeline.addLast(new StringDecoder(CharsetUtil.UTF_8));
