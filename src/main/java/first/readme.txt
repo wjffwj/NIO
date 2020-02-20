@@ -143,3 +143,37 @@ netty中channel的实现是线程安全的，我们可以存储一个channel的�
 消息会按顺序发送出去(channel对应的eventLoop对应的singleThreadEventLoop的父类singleThreadExecutor中维护了一个队列)
 最后执行最底层的注册逻辑  将channel注册到selector上
 --------------------------------------------------------------------------------------------------------------------------
+java.util.concurrent(future)
+ip.netty(future)   addListener
+可以添加监听器
+Listens to the result of a Future.
+The result of the asynchronous operation is notified once this listener is added by calling Future.addListener(GenericFutureListener).
+void operationComplete(F future)
+throws Exception
+Invoked when the operation associated with the Future has been completed.
+
+future负责添加监听器  在future的子类中具体通知添加好的监听器（观察者模式）
+
+ChannelFutureListener:
+Listens to the result of a ChannelFuture.
+The result of the asynchronous Channel I/O operation is notified once this listener is added by calling ChannelFuture.addListener(GenericFutureListener).
+Return the control to the caller quickly
+operationComplete(Future) is directly called by an I/O thread.
+ Therefore, performing a time consuming task or a blocking operation in the handler method can cause an unexpected pause during I/O.
+ If you need to perform a blocking operation on I/O completion,
+try to execute the operation in a different thread using a thread pool.
+--------------------------------------------------------------------------------------------------
+io.netty.channel public interface ChannelPromise（Special {@link ChannelFuture} which is writable.）
+extends ChannelFuture, Promise<Void>
+Special ChannelFuture which is writable.
+
+Promise:
+ /**
+     * Marks this future as a success and notifies all listeners. 标记这个future执行成功后会通知全部监听器
+     */
+    Promise<V> setSuccess(V result);
+
+
+ jdk future通过get 获取执行结果
+ 而netty的 future通过观察者模式的应用当future执行完成后 已回调的方式获取执行结果
+--------------------------------------------------------------------------------------------------
