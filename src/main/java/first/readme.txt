@@ -104,8 +104,42 @@ Netty channel注册
     Returns the configured {@link EventLoopGroup} or {@code null} if non is configured yet.
     返回EventLoopGroup（事件循环组） NioEventLoopGroup
 --
+注册
  register(channel)
-    会进入MultithreadEventLoopGroup这个类(NioEventLoopGroup)的父类执行register方法
- MultithreadEventLoopGroup:   Abstract base class for EventLoopGroup implementations that handles their tasks with multiple threads at the same time
+    会进入MultiThreadEventLoopGroup这个类(NioEventLoopGroup)的父类执行register方法
+ MultiThreadEventLoopGroup:   Abstract base class for EventLoopGroup implementations that handles their tasks with multiple threads at the same time
 
+SingleThreadEventLoop:Abstract base class for EventLoops that execute all its submitted tasks in a single thread.
+通过 chooser 获取到 EventLoop（SingleThreadEventLoop）  去注册 channel
 
+abstractChannel  register方法（eventLoop(SIngleThreadEventLoop)）SIngleThreadEventLoop(其中维护了一个线程)
+if (eventLoop.inEventLoop()) { //如果当前调用此方法的线程就是SingleThreadEventLoop关联的线程 执行注册
+                register0(promise);
+            } else {//否则交给singleThreadEventLoop的那个线程异步执行
+                try {
+                    eventLoop.execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            register0(promise);
+                        }
+                    });
+                } catch (Throwable t) {
+                    logger.warn(
+                            "Force-closing a channel whose registration task was not accepted by an event loop: {}",
+                            AbstractChannel.this, t);
+                    closeForcibly();
+                    closeFuture.setClosed();
+                    safeSetFailure(promise, t);
+                }
+            }
+
+为什么要进行当前线程判断呢：
+1个EventLoopGroup中包含一个或者多个EventLoop
+1个EventLoop在他的整个生命周期中只会于一个thread进行绑定而这个thread就是io线程,间接继承了SingleThreadEventExecutor
+所有由eventLoop处理的io事件都将由他关联的thread上处理
+1个channel在他的整个生命周期中，只会注册在一个eventLoop上
+1个eventLoop在运行过程中会被分配给1个或多个channel
+netty中channel的实现是线程安全的，我们可以存储一个channel的引用，且需要向远程端点发送数据时通过这个引用调用channel相关的方法，
+消息会按顺序发送出去(channel对应的eventLoop对应的singleThreadEventLoop的父类singleThreadExecutor中维护了一个队列)
+最后执行最底层的注册逻辑  将channel注册到selector上
+--------------------------------------------------------------------------------------------------------------------------
