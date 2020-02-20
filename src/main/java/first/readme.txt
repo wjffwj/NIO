@@ -176,4 +176,33 @@ Promise:
 
  jdk future通过get 获取执行结果
  而netty的 future通过观察者模式的应用当future执行完成后 已回调的方式获取执行结果
+ channelfuturelistener的operationComplete是由io线程调用的 所以其中不能有耗时操作
 --------------------------------------------------------------------------------------------------
+ChannelInboundHandler
+which adds callbacks for state changes. This allows the user to hook in to state changes easily.
+//channel注册完成后会进行回调,里面有好多回调方法
+/**
+     * The {@link Channel} of the {@link ChannelHandlerContext} was registered with its {@link EventLoop}
+     */
+    void channelRegistered(ChannelHandlerContext ctx) throws Exception;
+
+    /**
+     * The {@link Channel} of the {@link ChannelHandlerContext} was unregistered from its {@link EventLoop}
+     */
+    void channelUnregistered(ChannelHandlerContext ctx) throws Exception;
+
+    /**
+     * The {@link Channel} of the {@link ChannelHandlerContext} is now active
+     */
+    void channelActive(ChannelHandlerContext ctx) throws Exception;
+
+    /**
+     * The {@link Channel} of the {@link ChannelHandlerContext} was registered is now inactive and reached its
+     * end of lifetime.
+     */
+    void channelInactive(ChannelHandlerContext ctx) throws Exception;
+
+    /**
+     * Invoked when the current {@link Channel} has read a message from the peer.
+     */
+    void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception;
