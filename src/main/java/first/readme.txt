@@ -206,3 +206,33 @@ which adds callbacks for state changes. This allows the user to hook in to state
      * Invoked when the current {@link Channel} has read a message from the peer.
      */
     void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception;
+-----------------------------------------------------------------------------------------------------------------------
+ 复习：
+ NIO byteBuffer
+1.从inputStream获取channel对象
+2.创建buffer
+3.将数据从channel对象中读取到buffer中
+
+ByteBuffer  :mark,position,limit ,capicity
+position:即将要读取的元素位置<limit
+limit:初始时等于cap flip时limit也是最后一个元素的位置，flip()时limit不变,position回到最初的位置
+flip()方法作用： 1.将limit值设置为当前的position
+                2.将position设置为0
+clear()方法作用：
+                1.将limit值设置为capacity
+                2.将position设置为0
+compact方法的作用：
+                1.将所有未读的数句放到起始位置
+                2.positon放到最后一个未读元素后
+                3.limit设置为capacity
+                4.buffer数据准备好但是不会覆盖未读数据
+
+DirectByteBuffer 分配到堆上但是持有了一个内存地址指针 指针指向了   堆外本地内存，通过c语言malloc分配到堆外 且是用户态
+
+FileChannel的read函数，write函数中，如果传入的参数是HeapBuffer类型，则会临时申请1块儿DirectBuffer进行1次数据拷贝，而不是直接进行数据传输，这是为什么：
+代码流程：1判断传入的buffer如果是DirectBuffer 则这接堆外内存
+         如果传入的入参是HeapBuffer堆内内存，然后分配出一个直接内存 ，然后HeapBuffer拷贝到直接内存， 然后处理write写出
+    之所以这么做是因为 hotsport的垃圾回收会移动对象的 compacting GC,如果把java字节数组byte[]引用传给native代码，让native代码直接访问数组的内容的话，
+    需要保证native代码在访问时byte数组这个字节对象不能移动，所以会影响jvm垃圾回收，让整个堆不会被回收，则会有问题，所以将堆数据拷贝到（不发生GC） 直接缓冲区， 这样堆中的数据垃圾回收也没关系。
+
+
