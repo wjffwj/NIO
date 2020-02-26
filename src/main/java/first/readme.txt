@@ -234,5 +234,80 @@ FileChannel的read函数，write函数中，如果传入的参数是HeapBuffer�
          如果传入的入参是HeapBuffer堆内内存，然后分配出一个直接内存 ，然后HeapBuffer拷贝到直接内存， 然后处理write写出
     之所以这么做是因为 hotsport的垃圾回收会移动对象的 compacting GC,如果把java字节数组byte[]引用传给native代码，让native代码直接访问数组的内容的话，
     需要保证native代码在访问时byte数组这个字节对象不能移动，所以会影响jvm垃圾回收，让整个堆不会被回收，则会有问题，所以将堆数据拷贝到（不发生GC） 直接缓冲区， 这样堆中的数据垃圾回收也没关系。
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+NETTY  io.netty.buffer.ByteBuf
+
+ByteBuf 内部有两个指针 readerIndex writerIndex    wirterIndex指向当前写的位置，readerIndex指向当前读的位置 ，这样在读写过程中 ByteBuf内部会被分为3个区域
+
+        +-------------------+------------------+------------------+
+        | discardable bytes |  readable bytes  |  writable bytes  |
+        |                   |     (CONTENT)    |                  |
+        +-------------------+------------------+------------------+
+        |                   |                  |                  |
+        0      <=      readerIndex   <=   writerIndex    <=    capacity
 
 
+ discardable bytes  可丢弃的 因为这部分内容已经读取完毕
+ readable bytes 可读内容
+ writeable bytes 继续可写的区域
+ 有两个指针好处就是进行读取切换的时候不需要像flip()方法做切换
+ buffer.getByte(i) 不会改变读索引
+ buffer.readByte() 会改变读索引
+ readerIndex()会改变索引
+ writerIndex()会改变索引
+
+ netty ByteBuf所提供的3种缓冲区类型
+ 1. heapBuffer
+ 2.Direct Buffer
+ 3.composite buffer (复合缓冲区) 用的多
+
+CompositeByteBuf(将多个缓冲区合并成单个缓冲区)
+A virtual buffer which shows multiple buffers as a single merged buffer.
+通过这个方法创建   ByteBufAllocator.compositeBuffer()
+ ByteBuf heapBuf = Unpooled.buffer(10);        //UnpooledUnsafeHeapByteBuf
+ ByteBuf directBuf = Unpooled.directBuffer(8); //UnpooledUnsafeNoCleanerDirectByteBuf
+
+---------------------------------------------------------------------------------------------------------------------------------------------
+netty ByteBuf
+
+Heap Buffer（堆缓冲区）
+这是最常用的类型，ByteBuf将数据存到JVM堆空间中，并将实际的数据存放到 byte array中来实现
+优点：由于数据是JVM堆中，可以快速创建和快速释放，提供访问内部字节数组的方法。
+缺点：每次读写数据时都需要先将数据复制到直接缓冲区中，再进行网络传输。
+
+Direct BUffer（直接缓冲区）
+在堆之外直接分配内存空间，直接缓冲区不会占用堆的容量空间，由操作系统在本地内存进行的数据分配
+优点： 使用socket进行数据传递时性能好，数据在操作系统的本地内存中，不需拷贝步骤
+缺点： 因为Direct Buffer是直接在操作系统内存中的，内存空间分配与释放比堆空间更加复杂，且速度慢一些。
+
+NEtty通过提供内存池来解决这个问题。直接缓冲区不支持通过字节数组的方式访问其中的数据
+
+重点：对于后端的业务消息编解码来说推荐使用HeapByteBuf,对于IO通信线程在读写缓冲区时，推荐使用DirectByteBuf
+
+Composite Buffer(复合缓冲区)
+里面可以存储多个多种类型的ByteBuf
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+jdk ByteBuffer 比对 netty ByteBuf
+1.Netty的ByteBuf采用读写索引分离的策略 readerIndex ,writerIndex  一个初始化的ByteBuf  readerIndex=writerIndex=0 最后随着读写进行ByteBuf会被分成3个区域，DisCard，readable ,writeable
+2.读索引写索引是同一个位置时继续读取会报错 IndexOutOfBoundsException
+3.对于ByteBuf的任何读写操作 都会分别维护读索引和写索引
+--
+jdk ByteBuffer 的缺点
+1.final byte[]  hb 这个是jdb ByteBuffer对象中用于存储数据的对象声明，可以看到，其字节数据被声明为final 也就是长度是固定不变的。一旦分配好就不能动态扩容与收缩。
+如果ByteBuffer空间不足，我们只有一个解决方案，创建一个新的ByteBuffer对象，然后再将之前的ByteBUffer中的数据复制过去，这一切操作都得由开发者自己手动完成。
+2.ByteBuffer只使用1个position来标识位置信息，进行读写切换时需要调用flip方法，使用起来很不方便
+
+Netty ByteBuf优点
+1.字节存储的数组是动态的，最大值是Integer。MAX_VALUE  这里的动态性是体现在write方法中的。write方法在执行时会判断buffer的容量。如果不足则进行自动动态扩容。
+2.ByteBuf的读写索引是完全分开的，使用起来很方便。
+----------------------------------------------------------------------------------------------------------------------------------
+ReferenceCounted
+一个引用计数的对象，需要显式释放。
+当实例化一个新的ReferenceCounted时，它以1的引用计数开始。keep（）增加引用计数，而release（）减少引用计数。 如果引用计数减少到0，则将显式释放对象，并且访问该释放对象通常会导致访问冲突。
+如果实现ReferenceCounted的对象是其他实现ReferenceCounted的对象的容器，则当容器的引用计数变为0时，包含的对象也将通过release（）释放。
+
+
+AtomicIntegerFieldUpdater(jdk1.5) 原子整形字段更新器，提供了很多原子更新操作（cas）
+1.更新器更新的必须是int类型变量，不能是其包装类型
+2.更新器更新的必须是volatile类型变量，确保禁止指令重排序，且线程之间共享变量的可见性
+------------------------------------------------------------------------------  ----
